@@ -1,0 +1,5 @@
+{
+  "name": "Gerenciador de Ranking Semanal",
+  "description": "Um aplicativo simples para gerenciar um ranking semanal de jogadores. Os usuários podem adicionar jogadores, enviar os resultados das competições semanais e visualizar uma tabela de classificação atualizada automaticamente. O aplicativo também permite a exportação dos dados para um arquivo Excel.",
+  "requestFramePermissions": []
+}
