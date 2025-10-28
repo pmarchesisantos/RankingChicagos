@@ -169,14 +169,12 @@ export const RankingTable: React.FC<RankingTableProps> = ({ players, isAdmin, on
             </tfoot>
           </table>
         </div>
-        {isAdmin && (
-          <div className="mt-6 flex justify-end">
-            <button onClick={handleExport} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg flex items-center transition-colors">
-              <DownloadIcon className="w-5 h-5 mr-2" />
-              Exportar para Excel
-            </button>
-          </div>
-        )}
+        <div className="mt-6 flex justify-end">
+          <button onClick={handleExport} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg flex items-center transition-colors">
+            <DownloadIcon className="w-5 h-5 mr-2" />
+            Exportar para Excel
+          </button>
+        </div>
         </>
       ) : (
         <div className="text-center py-10 text-slate-500">

@@ -100,6 +100,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                             <WeekHistory
                                 weeks={weeks}
                                 players={players}
+                                isAdmin={true}
                                 onEdit={handleEditWeek}
                                 onDelete={onDeleteWeek}
                             />

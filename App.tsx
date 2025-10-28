@@ -7,6 +7,7 @@ import { Login } from './components/Login';
 import { useAuth } from './contexts/AuthContext';
 import { PLACEMENT_POINTS } from './constants';
 import { db } from './firebaseConfig';
+import { WeekHistory } from './components/WeekHistory';
 
 const App: React.FC = () => {
   const [players, setPlayers] = useState<PlayerData[]>([]);
@@ -125,7 +126,6 @@ const App: React.FC = () => {
     if (weekIdToUpdate) {
         alert("A semana foi atualizada no histórico. Lembre-se que os totais não são recalculados automaticamente. Se necessário, ajuste os valores na tabela manualmente.");
         const weekResults = results.map(({ playerId, rank }) => ({ playerId, rank }));
-        // FIX: Switched to v8 syntax for update.
         db.ref(`weeks/${weekIdToUpdate}`).update({
           results: weekResults,
           isDoubled: isDoubled,
@@ -134,30 +134,44 @@ const App: React.FC = () => {
     }
 
     const updates: Record<string, any> = {};
-    const localPlayersCopy = [...players];
     const multiplier = isDoubled ? 2 : 1;
+    const participatingPlayerIds = new Set(results.map(r => r.playerId));
 
-    results.forEach(result => {
-      const playerToUpdate = localPlayersCopy.find(p => p.id === result.playerId);
-      if (playerToUpdate) {
-        const placementPoints = (PLACEMENT_POINTS[result.rank - 1] || 1) * multiplier;
-        const participationPoints = 20 * multiplier;
-        const totalPointsForWeek = placementPoints + participationPoints;
+    players.forEach(player => {
+        const didParticipate = participatingPlayerIds.has(player.id);
 
-        const updatedPlayerData: Omit<PlayerData, 'id'> = {
-          name: playerToUpdate.name,
-          accumulatedValue: playerToUpdate.accumulatedValue,
-          previousTotalPoints: playerToUpdate.totalPoints,
-          totalPoints: playerToUpdate.totalPoints + totalPointsForWeek,
-          pointsToday: totalPointsForWeek,
-          presence: playerToUpdate.presence + 1,
-          wins: result.rank === 1 ? playerToUpdate.wins + 1 : playerToUpdate.wins,
-        };
-        updates[`/players/${playerToUpdate.id}`] = updatedPlayerData;
-      }
+        if (didParticipate) {
+            const result = results.find(r => r.playerId === player.id)!;
+            const placementPoints = (PLACEMENT_POINTS[result.rank - 1] || 1) * multiplier;
+            const participationPoints = 20 * multiplier;
+            const totalPointsForWeek = placementPoints + participationPoints;
+
+            updates[`/players/${player.id}`] = {
+                name: player.name,
+                accumulatedValue: player.accumulatedValue,
+                previousTotalPoints: player.totalPoints,
+                totalPoints: player.totalPoints + totalPointsForWeek,
+                pointsToday: totalPointsForWeek,
+                presence: player.presence + 1,
+                wins: result.rank === 1 ? player.wins + 1 : player.wins,
+            };
+        } else {
+            // Se o jogador não participou, reseta os pontos do dia e atualiza a pontuação anterior.
+            // Apenas envia a atualização se for necessário para evitar escritas desnecessárias no DB.
+            if (player.pointsToday !== 0) {
+                 updates[`/players/${player.id}`] = {
+                    name: player.name,
+                    accumulatedValue: player.accumulatedValue,
+                    totalPoints: player.totalPoints,
+                    previousTotalPoints: player.totalPoints,
+                    presence: player.presence,
+                    wins: player.wins,
+                    pointsToday: 0,
+                };
+            }
+        }
     });
 
-    // FIX: Switched to v8 syntax for push.
     const newWeekRef = db.ref('weeks').push();
     const newWeekId = newWeekRef.key;
     if (!newWeekId) {
@@ -172,13 +186,11 @@ const App: React.FC = () => {
     };
     updates[`/weeks/${newWeekId}`] = newWeek;
 
-    // FIX: Switched to v8 syntax for update.
     db.ref().update(updates);
   }, [players]);
 
   const handleDeleteWeek = useCallback((weekId: string) => {
-    if (window.confirm('Excluir esta semana do histórico não atualizará os totais. Você precisará ajustar a tabela manualmente. Deseja continuar?')) {
-        // FIX: Switched to v8 syntax for remove.
+    if (window.confirm('Excluir esta semana do histórico não atualizará os totais. Você precisará ajustar a tabela manually. Deseja continuar?')) {
         db.ref(`weeks/${weekId}`).remove();
     }
   }, []);
@@ -255,6 +267,11 @@ const App: React.FC = () => {
             <h2 className="text-2xl font-semibold mb-4 text-cyan-400">Classificação Geral</h2>
             <RankingTable players={rankingPlayers} isAdmin={false} />
           </div>
+          <WeekHistory 
+            weeks={weeks}
+            players={players}
+            isAdmin={false}
+          />
         </main>
       </div>
     </div>
